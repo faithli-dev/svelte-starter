@@ -34,7 +34,7 @@ https://github.com/mattpocock/skills
 - Cloudflare D1 + Drizzle ORM
 - Cloudflare KV
 - Cloudflare R2
-- Valibot
+- Zod
 - Tailwind CSS 4
 - shadcn-svelte
 - npm
@@ -90,7 +90,7 @@ Use:
 - Remote `command` for non-form imperative mutations;
 - Remote `prerender` for suitable static data.
 
-All Remote Function arguments should use Standard Schema validation; Valibot is installed as the default validator.
+All Remote Function arguments should use Standard Schema validation; Zod is installed as the default validator.
 
 See `docs/data-loading.md`.
 
@@ -117,7 +117,7 @@ src/routes/examples/+page.ts
 src/routes/examples/+page.svelte
 ```
 
-The example combines async load, Remote query/command, Valibot, Drizzle, D1, and single-flight query refresh.
+The example combines async load, Remote query/command, Zod, Drizzle, D1, and single-flight query refresh.
 
 ## Async mode
 

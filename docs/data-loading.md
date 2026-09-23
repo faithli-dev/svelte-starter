@@ -63,7 +63,7 @@ Prefer Remote Function `form` for user-facing form submissions because it can pr
 
 Use `command` when the mutation is not naturally a form submission.
 
-All remote function arguments must be validated with a Standard Schema validator. This starter uses Valibot.
+All remote function arguments must be validated with a Standard Schema validator. This starter uses Zod.
 
 ### Static data: prerender
 
@@ -108,7 +108,7 @@ The example demonstrates:
 
 - async universal `load`;
 - a Remote `query`;
-- a Valibot-validated Remote `command`;
+- a Zod-validated Remote `command`;
 - D1 through Drizzle;
 - `getRequestEvent()` for Cloudflare bindings;
 - single-flight query refresh.

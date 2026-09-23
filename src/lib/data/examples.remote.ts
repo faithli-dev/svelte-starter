@@ -3,7 +3,7 @@ import { getCloudflareEnv } from '$lib/server/cloudflare';
 import { createDb } from '$lib/server/db';
 import { exampleItems } from '$lib/server/db/schema';
 import { desc } from 'drizzle-orm';
-import * as v from 'valibot';
+import * as z from 'zod';
 
 export const listExampleItems = query(async () => {
   const { platform } = getRequestEvent();
@@ -13,8 +13,8 @@ export const listExampleItems = query(async () => {
   return db.select().from(exampleItems).orderBy(desc(exampleItems.createdAt)).limit(20);
 });
 
-const createExampleItemSchema = v.object({
-  name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(120))
+const createExampleItemSchema = z.object({
+  name: z.string().trim().min(1).max(120)
 });
 
 export const createExampleItem = command(createExampleItemSchema, async ({ name }) => {

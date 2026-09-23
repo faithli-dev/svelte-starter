@@ -35,7 +35,7 @@ Use async `load` for route orchestration. Use Remote `query`, `form`, `command`,
 
 The current Remote Functions feature is experimental. `svelte.config.js` opts into both Svelte async support and SvelteKit Remote Functions. Verify current upstream docs before framework upgrades.
 
-Remote query arguments are validated with Standard Schema; this starter uses Valibot.
+Remote query arguments are validated with Standard Schema; this starter uses Zod.
 
 Inside a Remote Function, `getRequestEvent()` provides access to SvelteKit's current request event, including the Cloudflare platform bindings.
 

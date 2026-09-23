@@ -31,7 +31,7 @@
   "dependencies": {
     "drizzle-orm": "^0.45.3",
     "sitemap": "^9.0.1",
-    "valibot": "^1.1.0"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260923.1",

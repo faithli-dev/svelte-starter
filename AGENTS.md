@@ -68,7 +68,7 @@ When available, load the official `svelte-code-writer` and `svelte-core-bestprac
 - Cloudflare D1 via Drizzle ORM
 - Cloudflare KV
 - Cloudflare R2
-- Valibot for Remote Function input validation
+- Zod for Remote Function input validation
 - Tailwind CSS 4
 - shadcn-svelte source-owned UI primitives
 - npm
@@ -125,7 +125,7 @@ Remote files use the `.remote.ts` suffix and must not live inside `src/lib/serve
 
 A Remote `query` may be awaited directly in a component or from a universal async `load`. Repeated active calls with identical arguments are deduplicated by SvelteKit.
 
-All Remote Function arguments must be validated with a Standard Schema validator. This starter uses Valibot.
+All Remote Function arguments must be validated with a Standard Schema validator. This starter uses Zod.
 
 When a mutation affects an active Remote query, prefer SvelteKit single-flight refresh/set behavior instead of inventing a separate invalidation layer.
 

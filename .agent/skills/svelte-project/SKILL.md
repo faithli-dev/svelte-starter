@@ -45,7 +45,7 @@ Whenever creating, editing, reviewing, or debugging `.svelte`, `.svelte.ts`, or 
 - SvelteKit 2
 - Cloudflare Workers adapter
 - D1 + Drizzle, KV, R2
-- Valibot Remote Function validation
+- Zod Remote Function validation
 - Tailwind CSS 4
 - npm
 - shadcn-svelte
@@ -89,7 +89,7 @@ Commands do not automatically invalidate reads. Use server-driven `query.refresh
 
 ### Validation
 
-Any Remote Function that accepts an argument must use Standard Schema validation. Prefer Valibot in this starter.
+Any Remote Function that accepts an argument must use Standard Schema validation. Prefer Zod in this starter.
 
 ### Cloudflare
 
