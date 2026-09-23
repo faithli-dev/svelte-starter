@@ -1,6 +1,6 @@
 ---
 name: svelte-project
-description: Use for implementing, reviewing, debugging, or upgrading Svelte 5 and SvelteKit code in this repository. Covers current Svelte APIs, SvelteKit routing/server boundaries, Cloudflare Workers, shadcn-svelte UI conventions, SEO, runtime sitemap behavior, and optional i18n.
+description: Use for implementing, reviewing, debugging, or upgrading Svelte 5 and SvelteKit code in this repository. Covers async load, Remote Functions, current Svelte APIs, Cloudflare Workers, shadcn-svelte UI conventions, SEO, runtime sitemap behavior, and optional i18n.
 ---
 
 # Svelte Project Skill
@@ -18,6 +18,7 @@ Official MCP:
 https://mcp.svelte.dev/mcp
 
 Local CLI fallback:
+
 ```bash
 npx @sveltejs/mcp
 ```
@@ -34,27 +35,75 @@ Whenever creating, editing, reviewing, or debugging `.svelte`, `.svelte.ts`, or 
 6. Apply relevant fixes and repeat until clean.
 7. Run project checks.
 
-CLI equivalents:
-
-```bash
-npx @sveltejs/mcp list-sections
-npx @sveltejs/mcp get-documentation "<section1>,<section2>"
-npx @sveltejs/mcp svelte-autofixer ./src/routes/+page.svelte
-npm run check
-npm run build
-```
-
 ## Current project assumptions
 
-- Svelte 5 runes mode for new code
+- Svelte 5 runes mode
+- Svelte experimental async enabled
+- SvelteKit Remote Functions enabled
+- async route load is the default route data convention
+- Remote Functions are the default typed client/server application data layer
 - SvelteKit 2
 - Cloudflare Workers adapter
+- D1 + Drizzle, KV, R2
+- Valibot Remote Function validation
 - Tailwind CSS 4
 - npm
-- shadcn-svelte source-owned UI primitives
+- shadcn-svelte
 - runtime `/sitemap.xml`
 - page metadata through `<svelte:head>`
 - i18n-ready but single-language by default
+
+## Default data conventions
+
+### async load
+
+Prefer:
+
+```ts
+export const load: PageLoad = async ({ params }) => {
+  return {
+    item: await getItem(params.id)
+  };
+};
+```
+
+Use load for route orchestration and route/request dependencies.
+
+Avoid waterfalls. Kick off independent asynchronous work before waiting on parent/dependent data.
+
+For slow non-critical server-load data, use SvelteKit promise streaming intentionally instead of awaiting everything.
+
+### Remote query
+
+Prefer Remote `query` for dynamic reusable server reads. Queries can be awaited from universal load functions or components and are deduplicated by argument while active.
+
+### Remote form
+
+Prefer Remote `form` for user-submitted forms because it supports progressive enhancement.
+
+### Remote command
+
+Use Remote `command` for imperative non-form mutations.
+
+Commands do not automatically invalidate reads. Use server-driven `query.refresh()` / `set()` or the relevant requested update flow.
+
+### Validation
+
+Any Remote Function that accepts an argument must use Standard Schema validation. Prefer Valibot in this starter.
+
+### Cloudflare
+
+Remote Functions always run server-side. Use `getRequestEvent()` to obtain `platform.env`, then access D1/KV/R2.
+
+Keep `.remote.ts` files outside `src/lib/server`.
+
+See `docs/data-loading.md`.
+
+## Experimental flags
+
+Current Remote Functions require the starter's experimental flags in `svelte.config.js`.
+
+Before altering these flags or upgrading Svelte/SvelteKit, consult current docs. Do not assume today's experimental API is permanent.
 
 ## Svelte 5 rules
 
@@ -65,15 +114,15 @@ npm run build
 - Use event attributes such as `onclick`.
 - Prefer snippets/`{@render}` for new composition APIs.
 - Prefer keyed each blocks for mutable collections.
+- Async expressions may be used where they improve Remote Function consumption.
 - Keep browser-only behavior out of server modules.
 - Do not create shared mutable server state that can leak across requests.
 
 ## SvelteKit rules
 
-- Keep server-only data and secrets in server-only modules and server route/load files.
-- Use `+page.server.ts`, `+layout.server.ts`, `+server.ts` when private environment access is required.
-- Keep universal load functions serializable.
-- Prefer framework routing/load/form primitives before adding custom plumbing.
+- Keep server-only data and secrets in server-only modules.
+- Prefer async load + Remote Functions before inventing custom RPC endpoints.
+- Use `+server.ts` for genuine HTTP/API surfaces, webhooks, feeds, downloads, or integration endpoints — not merely as an internal RPC transport.
 - Preserve Cloudflare Workers runtime compatibility.
 
 ## UI workflow

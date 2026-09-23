@@ -1,25 +1,23 @@
 # Svelte Starter
 
-Reusable SvelteKit starter for Cloudflare Workers with an intent-first agent workflow, shadcn-svelte UI, and Cloudflare-native storage.
+Reusable SvelteKit starter for Cloudflare Workers with async load, Remote Functions, shadcn-svelte UI, and Cloudflare-native storage.
 
 ## Core idea
-
-The starter is designed to reduce the most common agent failure: building a reasonable interpretation that is not what the user wanted.
 
 ```text
 Intent Gate
    ↓
-Grill unresolved decisions
+Approved spec
    ↓
-Capture CONTEXT / ADRs
+Async route load
    ↓
-Lock an approved spec
+Remote Functions
    ↓
-Implement at agreed seams
+D1 / KV / R2
    ↓
 Svelte MCP + autofixer
    ↓
-Review Standards + Spec separately
+Review + atomic commit
 ```
 
 The intent workflow is adapted from Matt Pocock's skills repository:
@@ -29,10 +27,14 @@ https://github.com/mattpocock/skills
 
 - Svelte 5
 - SvelteKit 2
+- **async load by default**
+- **Remote Functions by default**
+- Svelte experimental async mode enabled
 - Cloudflare Workers
 - Cloudflare D1 + Drizzle ORM
 - Cloudflare KV
 - Cloudflare R2
+- Valibot
 - Tailwind CSS 4
 - shadcn-svelte
 - npm
@@ -42,7 +44,7 @@ https://github.com/mattpocock/skills
 - runtime sitemap
 - TypeScript 6
 
-TypeScript 6 is intentional: current `svelte-check` supports TypeScript 7 only through its experimental TSGo path, so the starter stays on the stable compatibility path by default.
+> Remote Functions and Svelte async support are still experimental upstream. This starter deliberately enables them. Re-check the official SvelteKit docs when upgrading framework versions.
 
 ## Start
 
@@ -54,6 +56,88 @@ npm run dev
 
 After the first successful install, commit `package-lock.json`. CI/deployment should then prefer `npm ci`.
 
+## Default data flow
+
+```text
+route navigation
+      ↓
+async +page.ts / +layout.ts
+      ↓
+Remote query
+      ↓
+server
+      ↓
+Drizzle → D1
+KV / R2 where appropriate
+```
+
+For mutations:
+
+```text
+form UI → remote form
+imperative UI action → remote command
+                         ↓
+                 single-flight refresh
+                         ↓
+                    remote query
+```
+
+Use:
+
+- `async load` for route orchestration;
+- Remote `query` for reusable dynamic reads;
+- Remote `form` for user forms;
+- Remote `command` for non-form imperative mutations;
+- Remote `prerender` for suitable static data.
+
+All Remote Function arguments should use Standard Schema validation; Valibot is installed as the default validator.
+
+See `docs/data-loading.md`.
+
+## Remote Functions
+
+Remote Functions are exported from `.remote.ts` files:
+
+```ts
+import { query } from '$app/server';
+
+export const getItems = query(async () => {
+  // always executes on the server
+  return [];
+});
+```
+
+They can safely import server-only database/storage code. Inside Remote Functions, use `getRequestEvent()` to access Cloudflare's `platform.env`.
+
+The starter includes:
+
+```text
+src/lib/data/examples.remote.ts
+src/routes/examples/+page.ts
+src/routes/examples/+page.svelte
+```
+
+The example combines async load, Remote query/command, Valibot, Drizzle, D1, and single-flight query refresh.
+
+## Async mode
+
+`svelte.config.js` intentionally enables:
+
+```js
+compilerOptions: {
+  experimental: {
+    async: true
+  }
+},
+kit: {
+  experimental: {
+    remoteFunctions: true
+  }
+}
+```
+
+This enables current Remote Function usage and Svelte's async expressions.
+
 ## Cloudflare storage
 
 The starter declares three portable bindings in `wrangler.jsonc`:
@@ -63,8 +147,6 @@ DB  → Cloudflare D1
 KV  → Workers KV
 R2  → Cloudflare R2
 ```
-
-Wrangler's current automatic provisioning can create draft D1/KV/R2 resources without hard-coding account-specific IDs in the starter.
 
 D1 uses Drizzle ORM:
 
@@ -79,12 +161,8 @@ Workflow:
 ```bash
 npm run db:generate
 npm run db:migrate:local
-
-# after the remote binding exists/provisions
 npm run db:migrate:remote
 ```
-
-SvelteKit server code receives all three resources through `platform.env`.
 
 See `docs/cloudflare-storage.md`.
 
@@ -96,25 +174,17 @@ For material changes, agents must read:
 .agent/skills/project-intent/SKILL.md
 ```
 
-The project only grills when a material decision is unresolved. Small mechanical changes remain fast.
-
-Specs live under:
-
-```text
-docs/specs/
-```
-
-Domain vocabulary lives in `CONTEXT.md` when needed; durable architectural trade-offs live under `docs/adr/`.
+Specs live under `docs/specs/`. Domain vocabulary lives in `CONTEXT.md` when needed; durable architectural trade-offs live under `docs/adr/`.
 
 ## Svelte AI workflow
 
-The root `.mcp.json` points to the official Svelte MCP server:
+The root `.mcp.json` points to:
 
 ```text
 svelte → https://mcp.svelte.dev/mcp
 ```
 
-For Svelte code, agents should use the official Svelte AI flow:
+For Svelte code:
 
 ```bash
 npm run svelte:sections
@@ -122,7 +192,7 @@ npm run svelte:docs -- "<section1>,<section2>"
 npm run svelte:fix -- ./src/routes/+page.svelte
 ```
 
-The official `svelte-code-writer` and `svelte-core-bestpractices` skills should be loaded when the active coding client supports them.
+The official `svelte-code-writer` and `svelte-core-bestpractices` skills should be loaded when supported.
 
 ## UI workflow
 
@@ -136,17 +206,10 @@ src/lib/components/ui
 shadcn-svelte registry source
 ```
 
-`components.json` is preconfigured for SvelteKit + Tailwind 4 with the current `new-york` style.
-
-Add components with:
+`components.json` is preconfigured for SvelteKit + Tailwind 4 with the `new-york` style.
 
 ```bash
 npm run ui:add -- button card dialog tabs
-```
-
-Install/update the official shadcn-svelte skill in clients that support Skills:
-
-```bash
 npm run ui:skill:install
 ```
 
@@ -169,7 +232,7 @@ npm run ui:add -- button card dialog tabs
 npm run ui:skill:install
 
 npm run svelte:sections
-npm run svelte:docs -- "$state,$derived"
+npm run svelte:docs -- "remote-functions,load"
 npm run svelte:fix -- ./src/routes/+page.svelte
 
 npm run design:install

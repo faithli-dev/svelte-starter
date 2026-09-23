@@ -38,7 +38,7 @@ See `.agent/references/git-workflow.md`.
 
 ## Source of truth
 
-For Svelte 5 and SvelteKit behavior, APIs, routing, rendering, configuration, reactivity, and current best practices:
+For Svelte 5 and SvelteKit behavior, APIs, routing, rendering, configuration, reactivity, Remote Functions, and current best practices:
 
 1. Prefer the official Svelte MCP server when available.
 2. Use `list-sections` before guessing which documentation section applies.
@@ -62,10 +62,13 @@ When available, load the official `svelte-code-writer` and `svelte-core-bestprac
 
 - Svelte 5
 - SvelteKit 2
+- Svelte experimental async mode enabled
+- SvelteKit Remote Functions enabled
 - Cloudflare Workers via `@sveltejs/adapter-cloudflare`
 - Cloudflare D1 via Drizzle ORM
 - Cloudflare KV
 - Cloudflare R2
+- Valibot for Remote Function input validation
 - Tailwind CSS 4
 - shadcn-svelte source-owned UI primitives
 - npm
@@ -87,6 +90,60 @@ npm run build
 
 Do not add pnpm, Yarn, or Bun lockfiles unless the user explicitly changes the package-manager policy. Commit `package-lock.json` after a successful install and prefer `npm ci` in CI.
 
+## Default data architecture
+
+This starter intentionally uses **async load + Remote Functions by default**.
+
+### Route orchestration
+
+New `+page.ts`, `+layout.ts`, `+page.server.ts`, and `+layout.server.ts` load functions should normally be written as `async` functions.
+
+Use load for:
+
+- route/URL/params-dependent orchestration;
+- route-level metadata dependencies;
+- request-scoped auth/session composition;
+- data that should be ready as part of navigation;
+- coordinating multiple independent reads.
+
+Avoid waterfalls. Start independent work before awaiting dependent work. SvelteKit already runs independent route load functions in parallel.
+
+For slow non-essential values in a server load, return the promise without awaiting it when streaming is appropriate.
+
+### Remote Functions
+
+Prefer Remote Functions over ad-hoc JSON endpoints for application-internal typed client/server communication.
+
+Default choice:
+
+- `query` — reusable dynamic server reads;
+- `form` — user-facing form mutations; prefer this when progressive enhancement matters;
+- `command` — imperative mutations that are not naturally forms;
+- `prerender` — static server data where appropriate.
+
+Remote files use the `.remote.ts` suffix and must not live inside `src/lib/server`.
+
+A Remote `query` may be awaited directly in a component or from a universal async `load`. Repeated active calls with identical arguments are deduplicated by SvelteKit.
+
+All Remote Function arguments must be validated with a Standard Schema validator. This starter uses Valibot.
+
+When a mutation affects an active Remote query, prefer SvelteKit single-flight refresh/set behavior instead of inventing a separate invalidation layer.
+
+See `docs/data-loading.md`.
+
+## Experimental feature policy
+
+Remote Functions and Svelte async support are currently experimental upstream.
+
+This starter deliberately opts in through `svelte.config.js`:
+
+```text
+compilerOptions.experimental.async = true
+kit.experimental.remoteFunctions = true
+```
+
+Do not casually remove these flags. When upgrading Svelte/SvelteKit, verify the current official docs first because the API/configuration may change.
+
 ## Svelte 5 implementation rules
 
 - New Svelte code uses runes mode.
@@ -97,6 +154,7 @@ Do not add pnpm, Yarn, or Bun lockfiles unless the user explicitly changes the p
 - Use event properties such as `onclick` instead of legacy `on:click`.
 - Use snippets and `{@render ...}` instead of slots for new component APIs.
 - Prefer keyed each blocks for mutable collections.
+- Async expressions are enabled; use them when they simplify Remote Function consumption without creating hidden waterfalls.
 - Avoid shared server-side state that can leak between users.
 
 ## UI architecture
@@ -132,7 +190,9 @@ platform.env.R2  → R2Bucket
 
 D1 application queries should use the Drizzle factory in `src/lib/server/db/index.ts`. Schema belongs in `src/lib/server/db/schema.ts`.
 
-Do not expose these bindings to browser code. Keep storage/business access in server-only modules, server loads, actions, endpoints, or remote server functions.
+Inside a Remote Function, use `getRequestEvent()` to access the current SvelteKit request event and Cloudflare platform bindings.
+
+Do not expose D1/KV/R2 bindings to browser code.
 
 Use:
 
@@ -148,7 +208,7 @@ See `docs/cloudflare-storage.md`.
 ## Rendering and Cloudflare
 
 - Preserve Cloudflare Workers compatibility.
-- Prefer SvelteKit server/load/form primitives over Node-specific infrastructure.
+- Prefer SvelteKit load + Remote Functions before adding custom API/RPC infrastructure.
 - Keep private environment variables in server-only modules.
 - Public variables must use SvelteKit's `PUBLIC_` convention.
 - Do not expose secrets through `PUBLIC_*`.

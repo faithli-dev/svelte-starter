@@ -1,3 +1,9 @@
+<script lang="ts">
+  import type { PageProps } from './$types';
+
+  let { data }: PageProps = $props();
+</script>
+
 <svelte:head>
   <title>Svelte Starter</title>
   <meta
@@ -8,8 +14,12 @@
 
 <main class="mx-auto flex min-h-screen max-w-6xl items-center px-6 py-20">
   <section class="max-w-3xl space-y-8">
-    <div class="inline-flex rounded-full border bg-muted px-3 py-1 text-sm text-muted-foreground">
-      Svelte 5 · SvelteKit · Cloudflare · shadcn-svelte
+    <div class="flex flex-wrap gap-2">
+      {#each data.stack as item}
+        <span class="inline-flex rounded-full border bg-muted px-3 py-1 text-sm text-muted-foreground">
+          {item}
+        </span>
+      {/each}
     </div>
 
     <div class="space-y-4">
@@ -17,23 +27,23 @@
         A small starter with strong project memory.
       </h1>
       <p class="max-w-2xl text-lg leading-8 text-muted-foreground">
-        Build with Svelte 5 runes, validate with the official Svelte MCP, add UI from
-        shadcn-svelte, and keep product intent explicit before implementation.
+        Async load by default, Remote Functions for typed client/server data, Svelte 5 runes,
+        Cloudflare-native storage, and shadcn-svelte for UI.
       </p>
     </div>
 
     <div class="flex flex-wrap gap-3">
       <a
         class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        href="https://svelte.dev/docs/ai/overview"
+        href="/examples"
       >
-        Svelte AI docs
+        Remote function example
       </a>
       <a
         class="rounded-lg border bg-background px-4 py-2 text-sm font-medium"
-        href="https://www.shadcn-svelte.com/docs"
+        href="https://svelte.dev/docs/kit/remote-functions"
       >
-        shadcn-svelte docs
+        Remote Functions docs
       </a>
     </div>
   </section>
